@@ -1,0 +1,47 @@
+# Environment files (real configs — copy .env.example to .env locally)
+.env
+imager/.env
+**/.env.local
+**/.env.*.local
+
+# Node / yarn / npm
+node_modules/
+imager/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+.yarn/cache
+.yarn/install-state.gz
+
+# TypeScript build output
+dist/
+imager/dist/
+*.tsbuildinfo
+
+# Render cache (avatars generated at runtime)
+imager/saved_figure/
+saved_figure/
+
+# Logs
+*.log
+logs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+*.pid
+
+# Coverage / testing
+coverage/
+.nyc_output/
