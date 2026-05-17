@@ -115,9 +115,13 @@ export const HttpRouter = async (request: Request<any, any, any, RequestQuery>, 
             // Reset totale del contesto
             tempCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-            tempCtx.fillStyle = '#fefefe';
+            // GIF only: solid bg becomes transparent key via flood-fill. PNG has native alpha.
+            if(buildOptions.imageFormat === 'gif')
+            {
+                tempCtx.fillStyle = '#fefefe';
 
-            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            }
 
             if(totalFrames && (i > 0)) avatar.updateAnimationByFrames(1);
 
@@ -262,6 +266,49 @@ export const HttpRouter = async (request: Request<any, any, any, RequestQuery>, 
             }
             else
             {
+                // PNG: flood-fill from edges -> alpha 0 on near-white connected pixels.
+                // Same idea as GIF transparent key, but writes to alpha channel directly.
+                {
+                    const w = tempCanvas.width;
+                    const h = tempCanvas.height;
+                    const imageData = tempCtx.getImageData(0, 0, w, h);
+                    const data = imageData.data;
+                    const visited = new Uint8Array(w * h);
+                    const stack: number[] = [];
+                    for(let x = 0; x < w; x++)
+                    {
+                        stack.push(x, 0);
+                        stack.push(x, h - 1);
+                    }
+                    for(let y = 1; y < h - 1; y++)
+                    {
+                        stack.push(0, y);
+                        stack.push(w - 1, y);
+                    }
+                    while(stack.length > 0)
+                    {
+                        const py = stack.pop() as number;
+                        const px = stack.pop() as number;
+                        if(px < 0 || px >= w || py < 0 || py >= h) continue;
+                        const idx = py * w + px;
+                        if(visited[idx]) continue;
+                        visited[idx] = 1;
+                        const pidx = idx * 4;
+                        const r = data[pidx];
+                        const g = data[pidx + 1];
+                        const b = data[pidx + 2];
+                        if(r > 180 && g > 180 && b > 180 && Math.abs(r - g) < 25 && Math.abs(g - b) < 25)
+                        {
+                            data[pidx + 3] = 0;
+                            stack.push(px + 1, py);
+                            stack.push(px - 1, py);
+                            stack.push(px, py + 1);
+                            stack.push(px, py - 1);
+                        }
+                    }
+                    tempCtx.putImageData(imageData, 0, 0);
+                }
+
                 const buffer = tempCanvas.toBuffer();
 
                 response
